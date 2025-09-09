@@ -315,6 +315,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Section de configuration Firebase -->
+    <div class="container mt-5 firebase-config">
+        <h3><i class="fas fa-fire"></i> Configuration Firebase</h3>
+        <p>Pour connecter cette application à Firebase, suivez ces étapes :</p>
+        <ol>
+            <li>Créez un projet sur <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
+            <li>Activez Authentication et Firestore Database</li>
+            <li>Copiez votre configuration Firebase et remplacez le code ci-dessous</li>
+            <li>Déployez l'application en ligne (voir instructions plus bas)</li>
+        </ol>
+        <pre><code>
+// Remplacez cette configuration par la vôtre
+const firebaseConfig = {
+    apiKey: "VOTRE_CLE_API",
+    authDomain: "votre-projet.firebaseapp.com",
+    projectId: "votre-projet",
+    storageBucket: "votre-projet.appspot.com",
+    messagingSenderId: "123456789",
+    appId: "VOTRE_APP_ID"
+};
         </code></pre>
     </div>
 
@@ -322,12 +343,12 @@
         // ==================== CONFIGURATION FIREBASE ====================
         // Remplacez cette configuration par celle de votre projet Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyA1iTuDhT08FQofJ8yXAEEJdgB_2Ds2ZTM",
-            authDomain: "calcul-de-revient-tn.firebaseapp.com",
-            projectId: "calcul-de-revient-tn",
-            storageBucket: "calcul-de-revient-tnt.appspot.com",
+            apiKey: "VOTRE_CLE_API",
+            authDomain: "votre-projet.firebaseapp.com",
+            projectId: "votre-projet",
+            storageBucket: "votre-projet.appspot.com",
             messagingSenderId: "123456789",
-            appId: "1:467900778063:web:a15914eef16f2cdf814c3a"
+            appId: "VOTRE_APP_ID"
         };
         
         // Initialiser Firebase
