@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CalculRevientTN - Application de Calcul de Revient</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Intégration de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark-text);
+        }
+        
+        .auth-container {
+            max-width: 450px;
+            margin: 80px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .app-container {
+            display: none;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .table-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        
+        .calculation-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .calculation-table input, .calculation-table select {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+            border: none;
+        }
+        
+        .summary-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        
+        .currency-selector {
+            max-width: 200px;
+        }
+        
+        .logo {
+            font-weight: bold;
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+        
+        .logo i {
+            color: var(--secondary-color);
+        }
+        
+        .feature-icon {
+            font-size: 50px;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+        
+        .tutorial-step {
+            padding: 15px;
+            border-left: 4px solid var(--secondary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        
+        .firebase-config {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page de connexion -->
+    <div id="loginPage" class="auth-container">
+        <div class="text-center mb-4">
+            <div class="logo"><i class="fas fa-calculator"></i> CalculRevientTN</div>
+            <h2 class="mt-2">Connexion</h2>
+            <p class="text-muted">Application de calcul de revient conforme à la loi tunisienne</p>
+        </div>
+        <form id="loginForm">
+            <div class="mb-3">
+                <label for="loginEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="loginEmail" required>
+            </div>
+            <div class="mb-3">
+                <label for="loginPassword" class="form-label">Mot de passe</label>
+                <input type="password" class="form-control" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+        </form>
+        <p class="mt-3 text-center">
+            Pas de compte? <a href="#" id="showRegister">Créer un compte</a>
+        </p>
+    </div>
+
+    <!-- Page d'inscription -->
+    <div id="registerPage" class="auth-container" style="display: none;">
+        <div class="text-center mb-4">
+            <div class="logo"><i class="fas fa-calculator"></i> CalculRevientTN</div>
+            <h2 class="mt-2">Création de compte</h2>
+        </div>
+        <form id="registerForm">
+            <div class="mb-3">
+                <label for="registerName" class="form-label">Nom complet</label>
+                <input type="text" class="form-control" id="registerName" required>
+            </div>
+            <div class="mb-3">
+                <label for="registerEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="registerEmail" required>
+            </div>
+            <div class="mb-3">
+                <label for="registerPassword" class="form-label">Mot de passe</label>
+                <input type="password" class="form-control" id="registerPassword" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Créer le compte</button>
+        </form>
+        <p class="mt-3 text-center">
+            Déjà inscrit? <a href="#" id="showLogin">Se connecter</a>
+        </p>
+    </div>
+
+    <!-- Application principale -->
+    <div id="appPage" class="app-container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"><i class="fas fa-calculator"></i> CalculRevientTN</a>
+                <div class="d-flex">
+                    <div class="dropdown me-2">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="currencyDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-money-bill-wave"></i> Devise: TND
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="currencyDropdown">
+                            <li><a class="dropdown-item currency-option" href="#" data-currency="TND">TND (Dinar Tunisien)</a></li>
+                            <li><a class="dropdown-item currency-option" href="#" data-currency="EUR">EUR (Euro)</a></li>
+                            <li><a class="dropdown-item currency-option" href="#" data-currency="USD">USD (Dollar US)</a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-outline-light me-2" id="saveBtn">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                    <button class="btn btn-outline-light" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="header text-center">
+            <h1><i class="fas fa-calculator"></i> Application de Calcul de Revient</h1>
+            <p>Conforme à la réglementation tunisienne - TVA 19%</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-table"></i> Tableau de calcul</h3>
+                        <div>
+                            <button class="btn btn-primary me-2" id="addRowBtn">
+                                <i class="fas fa-plus"></i> Ajouter une ligne
+                            </button>
+                            <button class="btn btn-success" id="calculateBtn">
+                                <i class="fas fa-calculator"></i> Calculer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped calculation-table" id="calculationTable">
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Fournisseur</th>
+                                    <th>Unité</th>
+                                    <th>Prix unitaire HT</th>
+                                    <th>Prix unitaire TTC</th>
+                                    <th>Quantité nécessaire</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="form-control description" placeholder="Description"></td>
+                                    <td><input type="text" class="form-control supplier" placeholder="Fournisseur"></td>
+                                    <td>
+                                        <select class="form-control unit">
+                                            <option value="pièce">Pièce</option>
+                                            <option value="kg">Kg</option>
+                                            <option value="m">Mètre</option>
+                                            <option value="m²">Mètre carré</option>
+                                            <option value="l">Litre</option>
+                                            <option value="heure">Heure</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="number" class="form-control price-ht" step="0.01" placeholder="0.00" min="0"></td>
+                                    <td><input type="number" class="form-control price-ttc" step="0.01" placeholder="0.00" readonly></td>
+                                    <td><input type="number" class="form-control quantity" step="0.01" placeholder="0.00" min="0"></td>
+                                    <td><input type="number" class="form-control total" step="0.01" placeholder="0.00" readonly></td>
+                                    <td><button class="btn btn-sm btn-danger remove-row"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="summary-card">
+                    <h4><i class="fas fa-chart-pie"></i> Résumé</h4>
+                    <div class="d-flex justify-content-between mt-4">
+                        <span>Total HT:</span>
+                        <span id="totalHT">0.00 TND</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>TVA (19%):</span>
+                        <span id="totalTVA">0.00 TND</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total TTC:</span>
+                        <span id="totalTTC">0.00 TND</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total général:</span>
+                        <span id="globalTotal">0.00 TND</span>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <h4><i class="fas fa-download"></i> Exportation</h4>
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-outline-primary" id="exportPDF">
+                            <i class="fas fa-file-pdf"></i> Exporter en PDF
+                        </button>
+                        <button class="btn btn-outline-success" id="exportExcel">
+                            <i class="fas fa-file-excel"></i> Exporter en Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <h4><i class="fas fa-info-circle"></i> Instructions</h4>
+                    <div class="tutorial-step">
+                        <strong>1.</strong> Ajoutez vos articles avec le bouton "Ajouter une ligne"
+                    </div>
+                    <div class="tutorial-step">
+                        <strong>2.</strong> Renseignez les informations pour chaque article
+                    </div>
+                    <div class="tutorial-step">
+                        <strong>3.</strong> Cliquez sur "Calculer" pour mettre à jour les totaux
+                    </div>
+                    <div class="tutorial-step">
+                        <strong>4.</strong> Exportez votre calcul en PDF ou Excel
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        </code></pre>
+    </div>
+
+    <script>
+        // ==================== CONFIGURATION FIREBASE ====================
+        // Remplacez cette configuration par celle de votre projet Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1iTuDhT08FQofJ8yXAEEJdgB_2Ds2ZTM",
+            authDomain: "calcul-de-revient-tn.firebaseapp.com",
+            projectId: "calcul-de-revient-tn",
+            storageBucket: "calcul-de-revient-tnt.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:467900778063:web:a15914eef16f2cdf814c3a"
+        };
+        
+        // Initialiser Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // ==================== GESTION DE L'AUTHENTIFICATION ====================
+        // Écouter les changements d'état d'authentification
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                // Utilisateur connecté
+                currentUser = user;
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('appPage').style.display = 'block';
+                loadUserData();
+            } else {
+                // Utilisateur non connecté
+                currentUser = null;
+                document.getElementById('appPage').style.display = 'none';
+                document.getElementById('loginPage').style.display = 'block';
+            }
+        });
+        
+        // Gestion de l'inscription
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Compte créé avec succès
+                    const user = userCredential.user;
+                    
+                    // Enregistrer le nom de l'utilisateur dans Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                })
+                .then(() => {
+                    alert('Compte créé avec succès! Vous êtes maintenant connecté.');
+                    document.getElementById('registerForm').reset();
+                })
+                .catch((error) => {
+                    alert("Erreur lors de la création du compte: " + error.message);
+                });
+        });
+        
+        // Gestion de la connexion
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Connexion réussie
+                    document.getElementById('loginForm').reset();
+                })
+                .catch((error) => {
+                    alert("Erreur de connexion: " + error.message);
+                });
+        });
+        
+        // Gestion de la déconnexion
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            auth.signOut().then(() => {
+                // Déconnexion réussie
+            }).catch((error) => {
+                alert("Erreur lors de la déconnexion: " + error.message);
+            });
+        });
+        
+        // ==================== GESTION DES DONNÉES ====================
+        // Sauvegarde des données
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            if (currentUser) {
+                const data = extractTableData();
+                
+                db.collection('calculations').doc(currentUser.uid).set({
+                    data: data,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    alert('Données sauvegardées avec succès dans Firebase!');
+                })
+                .catch((error) => {
+                    alert("Erreur lors de la sauvegarde: " + error.message);
+                });
+            }
+        });
+        
+        // Chargement des données
+        function loadUserData() {
+            if (currentUser) {
+                db.collection('calculations').doc(currentUser.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data().data;
+                        populateTable(data);
+                    }
+                })
+                .catch((error) => {
+                    console.log("Erreur lors du chargement des données:", error);
+                });
+            }
+        }
+        
+        // ==================== FONCTIONNALITÉS EXISTANTES ====================
+        // (Le reste du code JavaScript reste inchangé mais est adapté pour Firebase)
+        
+        // Gestion de l'affichage des pages
+        document.getElementById('showRegister').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('registerPage').style.display = 'block';
+        });
+
+        document.getElementById('showLogin').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('registerPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'block';
+        });
+
+        // Gestion de la devise
+        const exchangeRates = {
+            'TND': 1,
+            'EUR': 0.3,
+            'USD': 0.33
+        };
+
+        let currentCurrency = 'TND';
+
+        document.querySelectorAll('.currency-option').forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.preventDefault();
+                currentCurrency = this.getAttribute('data-currency');
+                document.getElementById('currencyDropdown').innerHTML = `<i class="fas fa-money-bill-wave"></i> Devise: ${currentCurrency}`;
+                calculateGlobalTotal();
+            });
+        });
+
+        // Formatage des montants avec devise
+        function formatCurrency(amount) {
+            return `${amount.toFixed(2)} ${currentCurrency}`;
+        }
+
+        // Conversion entre devises
+        function convertCurrency(amount, fromCurrency, toCurrency) {
+            return amount * (exchangeRates[toCurrency] / exchangeRates[fromCurrency]);
+        }
+
+        let currentUser = null;
+
+        // Extraction des données du tableau
+        function extractTableData() {
+            const rows = document.querySelectorAll('#calculationTable tbody tr');
+            const data = [];
+            
+            rows.forEach(row => {
+                data.push({
+                    description: row.querySelector('.description').value,
+                    supplier: row.querySelector('.supplier').value,
+                    unit: row.querySelector('.unit').value,
+                    priceHT: row.querySelector('.price-ht').value,
+                    quantity: row.querySelector('.quantity').value
+                });
+            });
+            
+            return data;
+        }
+
+        // Peuplement du tableau avec les données
+        function populateTable(data) {
+            const tbody = document.querySelector('#calculationTable tbody');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                const newRow = createTableRow();
+                newRow.querySelector('.description').value = item.description;
+                newRow.querySelector('.supplier').value = item.supplier;
+                newRow.querySelector('.unit').value = item.unit;
+                newRow.querySelector('.price-ht').value = item.priceHT;
+                newRow.querySelector('.quantity').value = item.quantity;
+                
+                // Calculer les valeurs pour cette ligne
+                calculateRowTotal(newRow);
+                
+                tbody.appendChild(newRow);
+            });
+            
+            calculateGlobalTotal();
+        }
+
+        // Fonctionnalités du tableau de calcul
+        document.getElementById('addRowBtn').addEventListener('click', function() {
+            const tbody = document.querySelector('#calculationTable tbody');
+            const newRow = createTableRow();
+            tbody.appendChild(newRow);
+        });
+
+        // Création d'une nouvelle ligne de tableau
+        function createTableRow() {
+            const newRow = document.createElement('tr');
+            
+            newRow.innerHTML = `
+                <td><input type="text" class="form-control description" placeholder="Description"></td>
+                <td><input type="text" class="form-control supplier" placeholder="Fournisseur"></td>
+                <td>
+                    <select class="form-control unit">
+                        <option value="pièce">Pièce</option>
+                        <option value="kg">Kg</option>
+                        <option value="m">Mètre</option>
+                        <option value="m²">Mètre carré</option>
+                        <option value="l">Litre</option>
+                        <option value="heure">Heure</option>
+                    </select>
+                </td>
+                <td><input type="number" class="form-control price-ht" step="0.01" placeholder="0.00" min="0"></td>
+                <td><input type="number" class="form-control price-ttc" step="0.01" placeholder="0.00" readonly></td>
+                <td><input type="number" class="form-control quantity" step="0.01" placeholder="0.00" min="0"></td>
+                <td><input type="number" class="form-control total" step="0.01" placeholder="0.00" readonly></td>
+                <td><button class="btn btn-sm btn-danger remove-row"><i class="fas fa-trash"></i></button></td>
+            `;
+            
+            // Ajouter les événements aux nouveaux champs
+            attachRowEvents(newRow);
+            
+            return newRow;
+        }
+
+        // Fonction pour attacher les événements à une ligne
+        function attachRowEvents(row) {
+            const priceHtInput = row.querySelector('.price-ht');
+            const priceTtcInput = row.querySelector('.price-ttc');
+            const quantityInput = row.querySelector('.quantity');
+            const totalInput = row.querySelector('.total');
+            const removeBtn = row.querySelector('.remove-row');
+            
+            // Calcul du prix TTC quand le prix HT change
+            priceHtInput.addEventListener('input', function() {
+                calculateRowTotal(row);
+            });
+            
+            // Calcul du total quand la quantité change
+            quantityInput.addEventListener('input', function() {
+                calculateRowTotal(row);
+            });
+            
+            // Supprimer la ligne
+            removeBtn.addEventListener('click', function() {
+                row.remove();
+                calculateGlobalTotal();
+            });
+        }
+
+        // Calcul du total pour une ligne
+        function calculateRowTotal(row) {
+            const priceHtInput = row.querySelector('.price-ht');
+            const priceTtcInput = row.querySelector('.price-ttc');
+            const quantityInput = row.querySelector('.quantity');
+            const totalInput = row.querySelector('.total');
+            
+            const priceHt = parseFloat(priceHtInput.value) || 0;
+            const priceTtc = priceHt * 1.19; // TVA 19% selon la loi tunisienne
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const total = priceTtc * quantity * 1.2; // Application de la marge de 20%
+            
+            priceTtcInput.value = priceTtc.toFixed(2);
+            totalInput.value = total.toFixed(2);
+            
+            calculateGlobalTotal();
+        }
+
+        // Calcul du total général
+        function calculateGlobalTotal() {
+            const totalInputs = document.querySelectorAll('.total');
+            const priceHtInputs = document.querySelectorAll('.price-ht');
+            let globalTotal = 0;
+            let totalHT = 0;
+            
+            totalInputs.forEach(input => {
+                globalTotal += parseFloat(input.value) || 0;
+            });
+            
+            priceHtInputs.forEach(input => {
+                const quantity = parseFloat(input.closest('tr').querySelector('.quantity').value) || 0;
+                totalHT += (parseFloat(input.value) || 0) * quantity;
+            });
+            
+            const totalTVA = totalHT * 0.19;
+            const totalTTC = totalHT + totalTVA;
+            
+            // Conversion dans la devise sélectionnée
+            const convertedTotalHT = convertCurrency(totalHT, 'TND', currentCurrency);
+            const convertedTotalTVA = convertCurrency(totalTVA, 'TND', currentCurrency);
+            const convertedTotalTTC = convertCurrency(totalTTC, 'TND', currentCurrency);
+            const convertedGlobalTotal = convertCurrency(globalTotal, 'TND', currentCurrency);
+            
+            document.getElementById('totalHT').textContent = formatCurrency(convertedTotalHT);
+            document.getElementById('totalTVA').textContent = formatCurrency(convertedTotalTVA);
+            document.getElementById('totalTTC').textContent = formatCurrency(convertedTotalTTC);
+            document.getElementById('globalTotal').textContent = formatCurrency(convertedGlobalTotal);
+        }
+
+        // Bouton de calcul manuel
+        document.getElementById('calculateBtn').addEventListener('click', function() {
+            const rows = document.querySelectorAll('#calculationTable tbody tr');
+            rows.forEach(row => calculateRowTotal(row));
+        });
+
+        // Export PDF
+        document.getElementById('exportPDF').addEventListener('click', function() {
+            // Utiliser jsPDF pour générer un PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.text('Calcul de Revient - Conforme à la loi tunisienne', 14, 15);
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Exporté le: ${new Date().toLocaleDateString()}`, 14, 22);
+            
+            // Préparer les données du tableau
+            const tableRows = [];
+            const rows = document.querySelectorAll('#calculationTable tbody tr');
+            
+            rows.forEach(row => {
+                const cells = [
+                    row.querySelector('.description').value,
+                    row.querySelector('.supplier').value,
+                    row.querySelector('.unit').value,
+                    parseFloat(row.querySelector('.price-ht').value || 0).toFixed(2),
+                    parseFloat(row.querySelector('.price-ttc').value || 0).toFixed(2),
+                    parseFloat(row.querySelector('.quantity').value || 0).toFixed(2),
+                    parseFloat(row.querySelector('.total').value || 0).toFixed(2)
+                ];
+                tableRows.push(cells);
+            });
+            
+            // Ajouter le tableau au PDF
+            doc.autoTable({
+                head: [['Description', 'Fournisseur', 'Unité', 'Prix HT', 'Prix TTC', 'Quantité', 'Total']],
+                body: tableRows,
+                startY: 30,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [44, 62, 80]
+                }
+            });
+            
+            // Ajouter le résumé
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text(`Total HT: ${document.getElementById('totalHT').textContent}`, 14, finalY);
+            doc.text(`TVA (19%): ${document.getElementById('totalTVA').textContent}`, 14, finalY + 7);
+            doc.text(`Total TTC: ${document.getElementById('totalTTC').textContent}`, 14, finalY + 14);
+            doc.setFontSize(14);
+            doc.text(`Total général: ${document.getElementById('globalTotal').textContent}`, 14, finalY + 25);
+            
+            // Sauvegarder le PDF
+            doc.save('calcul-revient-tunisie.pdf');
+        });
+
+        // Export Excel
+        document.getElementById('exportExcel').addEventListener('click', function() {
+            // Préparer les données du tableau
+            const data = [];
+            const headers = ['Description', 'Fournisseur', 'Unité', 'Prix unitaire HT', 'Prix unitaire TTC', 'Quantité nécessaire', 'Total'];
+            data.push(headers);
+            
+            const rows = document.querySelectorAll('#calculationTable tbody tr');
+            
+            rows.forEach(row => {
+                const cells = [
+                    row.querySelector('.description').value,
+                    row.querySelector('.supplier').value,
+                    row.querySelector('.unit').value,
+                    parseFloat(row.querySelector('.price-ht').value || 0),
+                    parseFloat(row.querySelector('.price-ttc').value || 0),
+                    parseFloat(row.querySelector('.quantity').value || 0),
+                    parseFloat(row.querySelector('.total').value || 0)
+                ];
+                data.push(cells);
+            });
+            
+            // Ajouter les totaux
+            data.push([]);
+            data.push(['Total HT', '', '', '', '', '', document.getElementById('totalHT').textContent]);
+            data.push(['TVA (19%)', '', '', '', '', '', document.getElementById('totalTVA').textContent]);
+            data.push(['Total TTC', '', '', '', '', '', document.getElementById('totalTTC').textContent]);
+            data.push(['Total général', '', '', '', '', '', document.getElementById('globalTotal').textContent]);
+            
+            // Créer un classeur Excel
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Ajouter le classeur et sauvegarder
+            XLSX.utils.book_append_sheet(wb, ws, 'Calcul Revient');
+            XLSX.writeFile(wb, 'calcul-revient-tunisie.xlsx');
+        });
+
+        // Attacher les événements à la ligne initiale
+        const initialRow = document.querySelector('#calculationTable tbody tr');
+        attachRowEvents(initialRow);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
